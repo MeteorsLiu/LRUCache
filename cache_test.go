@@ -27,7 +27,7 @@ func TestFunc(t *testing.T) {
 	tmap["rere"] = "dsfsdfsd"
 	ce.Set("testmap", tmap)
 
-	TMAP, _ := ce.Get("tmap")
+	TMAP, _ := ce.Get("testmap")
 	t.Log(TMAP.(map[string]interface{})["rere"])
 	t.Log(ce.Has("testmap"))
 
