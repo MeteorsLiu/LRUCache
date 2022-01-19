@@ -57,12 +57,15 @@ func New(maxEntries int) *Cache {
 
 // Add adds a value to the cache.
 func (c *Cache) Add(key Key, value interface{}) {
+	//Visit the member of struct is safe.
+	//Don't worry about it.
 	if c.cache == nil {
 		c.cache = make(map[interface{}]*list.Element)
 		c.ll = list.New()
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	//the map type is not concurrency safe.
 	if ee, ok := c.cache[key]; ok {
 		c.ll.MoveToFront(ee)
 		ee.Value.(*entry).value = value
