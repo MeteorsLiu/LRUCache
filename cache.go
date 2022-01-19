@@ -3,6 +3,7 @@ package cache
 import (
 	"container/list"
 	"sync"
+	"time"
 )
 
 /*
@@ -40,8 +41,9 @@ type Cache struct {
 type Key interface{}
 
 type entry struct {
-	key   Key
-	value interface{}
+	key    Key
+	value  interface{}
+	expire int64
 }
 
 // New creates a new Cache.
@@ -56,7 +58,7 @@ func New(maxEntries int) *Cache {
 }
 
 // Add adds a value to the cache.
-func (c *Cache) Set(key Key, value interface{}) {
+func (c *Cache) Set(key Key, value interface{}, expiretime time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.cache == nil {
@@ -69,7 +71,11 @@ func (c *Cache) Set(key Key, value interface{}) {
 		ee.Value.(*entry).value = value
 		return
 	}
-	ele := c.ll.PushFront(&entry{key, value})
+	ele := c.ll.PushFront(&entry{
+		key:    key,
+		value:  value,
+		expire: time.Now().Add(expiretime).Unix(),
+	})
 	c.cache[key] = ele
 	if c.MaxEntries != 0 && c.ll.Len() > c.MaxEntries {
 		c.RemoveOldest()
@@ -86,6 +92,32 @@ func (c *Cache) Get(key Key) (value interface{}, ok bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if ele, hit := c.cache[key]; hit {
+		c.ll.MoveToFront(ele)
+		return ele.Value.(*entry).value, true
+	}
+	return
+}
+
+// GetAndRemoveExpire loos up a key's value ,returns if it exists and call
+// a defer func to check it whether it's expired or not.
+// If it was expired,remove it
+func (c *Cache) GetAndRemoveExpire(key Key) (value interface{}, ok bool) {
+	//Visit the member of struct is safe.
+	//Don't worry about it.
+	if c.cache == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if ele, hit := c.cache[key]; hit {
+		if ele.Value.(*entry).expire > 0 {
+			defer func() {
+				if time.Now().Unix() >= ele.Value.(*entry).expire {
+					c.removeElement(ele)
+					return
+				}
+			}()
+		}
 		c.ll.MoveToFront(ele)
 		return ele.Value.(*entry).value, true
 	}
@@ -153,4 +185,26 @@ func (c *Cache) Clear() {
 	}
 	c.ll = nil
 	c.cache = nil
+}
+
+//Reset all cache value and clear all key.
+func (c *Cache) Reset() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, e := range c.cache {
+		c.removeElement(e)
+	}
+}
+
+func (c *Cache) RemoveExpire() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, e := range c.cache {
+		if e.Value.(*entry).expire > 0 {
+			if time.Now().Unix() >= e.Value.(*entry).expire {
+				c.removeElement(e)
+				return
+			}
+		}
+	}
 }
