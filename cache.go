@@ -58,7 +58,31 @@ func New(maxEntries int) *Cache {
 }
 
 // Add adds a value to the cache.
-func (c *Cache) Set(key Key, value interface{}, expiretime time.Duration) {
+func (c *Cache) Set(key Key, value interface{}) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.cache == nil {
+		c.cache = make(map[interface{}]*list.Element)
+		c.ll = list.New()
+	}
+	//the map type is not concurrency safe.
+	if ee, ok := c.cache[key]; ok {
+		c.ll.MoveToFront(ee)
+		ee.Value.(*entry).value = value
+		return
+	}
+	ele := c.ll.PushFront(&entry{
+		key:    key,
+		value:  value,
+		expire: 0,
+	})
+	c.cache[key] = ele
+	if c.MaxEntries != 0 && c.ll.Len() > c.MaxEntries {
+		c.RemoveOldest()
+	}
+}
+
+func (c *Cache) SetWithExpire(key Key, value interface{}, expiretime time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.cache == nil {
@@ -113,6 +137,8 @@ func (c *Cache) GetAndRemoveExpire(key Key) (value interface{}, ok bool) {
 		if ele.Value.(*entry).expire > 0 {
 			defer func() {
 				if time.Now().Unix() >= ele.Value.(*entry).expire {
+					//No need to lock this.
+					//Because defer Unlock() wil run afer this function
 					c.removeElement(ele)
 					return
 				}
@@ -197,13 +223,12 @@ func (c *Cache) Reset() {
 }
 
 func (c *Cache) RemoveExpire() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	for _, e := range c.cache {
 		if e.Value.(*entry).expire > 0 {
 			if time.Now().Unix() >= e.Value.(*entry).expire {
+				c.mu.Lock()
 				c.removeElement(e)
-				return
+				c.mu.Unlock()
 			}
 		}
 	}
