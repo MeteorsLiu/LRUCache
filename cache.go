@@ -96,8 +96,7 @@ func (c *Cache) Has(key Key) (hit bool) {
 	if c.cache == nil {
 		return
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	//It's safe to read the map only.
 	_, hit = c.cache[key]
 	return
 }
