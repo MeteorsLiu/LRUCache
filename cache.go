@@ -98,10 +98,10 @@ func (c *Cache) Remove(key Key) {
 		return
 	}
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	if ele, hit := c.cache[key]; hit {
 		c.removeElement(ele)
 	}
+	c.mu.Unlock()
 }
 
 // RemoveOldest removes the oldest item from the cache.
