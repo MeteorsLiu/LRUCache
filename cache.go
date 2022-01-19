@@ -56,7 +56,7 @@ func New(maxEntries int) *Cache {
 }
 
 // Add adds a value to the cache.
-func (c *Cache) Add(key Key, value interface{}) {
+func (c *Cache) Set(key Key, value interface{}) {
 	//Visit the member of struct is safe.
 	//Don't worry about it.
 	if c.cache == nil {
@@ -89,6 +89,16 @@ func (c *Cache) Get(key Key) (value interface{}, ok bool) {
 		c.ll.MoveToFront(ele)
 		return ele.Value.(*entry).value, true
 	}
+	return
+}
+
+func (c *Cache) Has(key Key) (hit bool) {
+	if c.cache == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	_, hit = c.cache[key]
 	return
 }
 
