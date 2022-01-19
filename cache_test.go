@@ -12,7 +12,6 @@ func TestFunc(t *testing.T) {
 	time.Sleep(6 * time.Second)
 
 	t.Log(ce.Get("test1"))
-
 	t.Log(ce.GetAndRemoveExpire("test2"))
 	t.Log(ce.GetAndRemoveExpire("test2"))
 	ce.Set("test999", 114514)
@@ -21,6 +20,20 @@ func TestFunc(t *testing.T) {
 	t.Log(ce.Get("test3423"))
 	// ce.Set("test1", 114564)
 	t.Log(ce.Get("test1"))
+
+	//Test Map
+	var tmap = map[string]interface{}{}
+	tmap["dsfsdf"] = 121223
+	tmap["rere"] = "dsfsdfsd"
+	ce.Set("testmap", tmap)
+
+	TMAP, _ := ce.Get("tmap")
+	t.Log(TMAP["rere"])
+	t.Log(ce.Has("testmap"))
+
+	t.Log(ce.Has("testmap"))
+	ce.Remove("testmap")
+	t.Log(ce.Has("testmap"))
 
 	ce.Reset()
 
