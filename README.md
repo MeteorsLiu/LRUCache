@@ -1,2 +1,6 @@
 # LRUCache
-A fork of Groupcache LRU.Do some fix to meet my needs
+A fork of Groupcache LRU.
+
+change some codes to meet my needs
+
+**THREAD SAFE**
