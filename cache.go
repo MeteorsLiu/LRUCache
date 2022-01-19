@@ -77,7 +77,7 @@ func (c *Cache) Set(key Key, value interface{}) {
 		expire: 0,
 	})
 	c.cache[key] = ele
-	if c.MaxEntries != 0 && c.ll.Len() > c.MaxEntries {
+	if c.MaxEntries != 0 && c.ll.Len() > c.MaxEntries+1 {
 		c.RemoveOldest()
 	}
 }
@@ -101,7 +101,7 @@ func (c *Cache) SetWithExpire(key Key, value interface{}, expiretime time.Durati
 		expire: time.Now().Add(expiretime).Unix(),
 	})
 	c.cache[key] = ele
-	if c.MaxEntries != 0 && c.ll.Len() > c.MaxEntries {
+	if c.MaxEntries != 0 && c.ll.Len() > c.MaxEntries+1 {
 		c.RemoveOldest()
 	}
 }
